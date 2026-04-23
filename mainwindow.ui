@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>600</width>
-    <height>400</height>
+    <width>649</width>
+    <height>519</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,16 +16,9 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout">
+     <layout class="QHBoxLayout" name="toolLayout">
       <item>
        <widget class="QLineEdit" name="lineEdit"/>
-      </item>
-      <item>
-       <widget class="QPushButton" name="selectButton">
-        <property name="text">
-         <string>指明</string>
-        </property>
-       </widget>
       </item>
       <item>
        <widget class="QPushButton" name="searchButton">
@@ -34,10 +27,38 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QPushButton" name="selectButton">
+        <property name="text">
+         <string>指明</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
     <item>
-     <widget class="QTreeView" name="treeView"/>
+     <layout class="QHBoxLayout" name="infoLayout" stretch="0,1">
+      <item>
+       <widget class="QTreeView" name="nameTree">
+        <property name="minimumSize">
+         <size>
+          <width>50</width>
+          <height>0</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QTreeView" name="attrTree">
+        <property name="minimumSize">
+         <size>
+          <width>50</width>
+          <height>0</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>
@@ -46,7 +67,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>600</width>
+     <width>649</width>
      <height>33</height>
     </rect>
    </property>

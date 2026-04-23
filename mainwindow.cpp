@@ -2,10 +2,10 @@
 #include "ui_mainwindow.h"
 #include <uiautomation.h>
 #include <QStandardItemModel>
+#include <QStringListModel>
 
-// 辅助函数：递归将 ControlInfo 节点及其子节点加入模型
-void addControlToModel(QStandardItem* parentItem, const ControlInfo& info) {
-    // 创建当前行的三个列单元格
+void addControlToModel(QStandardItem* parentItem, const ControlInfo& info)
+{
     QList<QStandardItem*> rowItems;
     rowItems << new QStandardItem(info.name)
         << new QStandardItem(info.type)
@@ -15,122 +15,179 @@ void addControlToModel(QStandardItem* parentItem, const ControlInfo& info) {
         << new QStandardItem(info.rect)
         << new QStandardItem(info.enabled)
         << new QStandardItem(info.focus);
-
-    // 将这一行作为子节点加入父节点
     parentItem->appendRow(rowItems);
-
-    // 递归处理子节点：使用该行第一列的 Item 作为下一层的容器[cite: 5]
-    for (const auto& child : info.children) {
+    for (const auto& child : info.children)
+    {
         addControlToModel(rowItems[0], child);
     }
+}
+
+void addNameToModel(QStandardItem* parentItem, const NameInfo& info)
+{
+    QList<QStandardItem*> rowItems;
+    rowItems << new QStandardItem(info.name);
+    parentItem->appendRow(rowItems);
+    for (const auto& child : info.children) 
+    {
+        addNameToModel(rowItems[0], child);
+    }
+}
+
+QStringList getPathToRoot(QModelIndex index)
+{
+    QStringList path;
+    while (index.isValid())
+    {
+        path.prepend(index.data(Qt::DisplayRole).toString());
+        index = index.parent();
+    }
+    return path;
 }
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent), myUi(new Ui::QtUiAutomationClass)
 {
-    BOOL isScreenReaderActive = FALSE;
-    SystemParametersInfo(SPI_GETSCREENREADER, 0, &isScreenReaderActive, 0);
-
-    if (isScreenReaderActive) {
-        // 系统已进入“屏幕阅读器模式”，大多数框架（如 Chrome/Qt）此时会自动暴露 UIA
-        MessageBox(
-            NULL,
-            L"确定要执行此操作吗？",
-            L"系统提示",
-            MB_YESNO | MB_ICONQUESTION
-        );
-    }
     myUi->setupUi(this);
-    // 1. 调用 Helper 获取全系统窗口树
-    // 注意：这可能需要几秒钟，因为系统窗口非常多
-    auto allControls = m_helper.getAllWindowsTree();
+    // 设置点击信号到槽函数
+    connect(myUi->nameTree, &QTreeView::clicked, this, &MainWindow::on_nameTree_clicked);
 
-    // 2. 更新模型
-    QStandardItemModel* model = new QStandardItemModel(this);
-    model->setHorizontalHeaderLabels({"Name", "Type", "Uia ID", "className", "helpText", "Rectangle", "isEnabled", "isFocus" });
 
-    for (const auto& control : allControls) {
-        // 过滤掉一些没有名字的背景进程窗口（可选）
-        if (control.name.isEmpty() && control.automationId.isEmpty()) continue;
-
-        addControlToModel(model->invisibleRootItem(), control);
+    myUi->nameTree->header()->hide(); 
+    auto allNameInfos = m_helper.getAllNameTree();
+    QStandardItemModel* nameModel = new QStandardItemModel(this);
+    for (const auto& nameInfo : allNameInfos)
+    {
+        if (nameInfo.name.isEmpty())
+        {
+            continue;
+        }
+        addNameToModel(nameModel->invisibleRootItem(), nameInfo);
     }
-
-    myUi->treeView->setModel(model);
+    myUi->nameTree->setModel(nameModel);
 }
 
-MainWindow::~MainWindow() {
+MainWindow::~MainWindow() 
+{
     delete myUi;
 }
 
-void MainWindow::on_searchButton_clicked() {
+void MainWindow::on_searchButton_clicked() 
+{
     QString title = myUi->lineEdit->text();
-
-    // 从 Helper 获取带有层级关系的控件树
     auto controls = m_helper.getControlsByWindowName(title);
-
-    // 创建标准项模型[cite: 5]
     QStandardItemModel* model = new QStandardItemModel(this);
     model->setHorizontalHeaderLabels({ "Name", "Type", "Uia ID", "className", "helpText", "Rectangle", "isEnabled", "isFocus"});
-
-    for (const auto& c : controls) {
-        // 从模型的根部开始递归构建树[cite: 5]
+    for (const auto& c : controls)
+    {
         addControlToModel(model->invisibleRootItem(), c);
     }
-
-    // 设置模型给 TreeView[cite: 5]
-    myUi->treeView->setModel(model);
-
-    // 展开所有节点以达到图中的展示效果[cite: 5]
-    myUi->treeView->expandAll();
+    myUi->attrTree->setModel(model);
+    myUi->attrTree->expandAll();
 }
 
-void MainWindow::updateTreeViewWithSubTree(const ControlInfo& subTree) {
-    // 1. 获取当前 TreeView 使用的模型
-    // 注意：如果是第一次加载，需要新建模型并设置表头
-    QStandardItemModel* model = qobject_cast<QStandardItemModel*>(myUi->treeView->model());
+void MainWindow::on_selectButton_clicked() 
+{
+    //暂未实现
+}
 
+void MainWindow::on_nameTree_clicked(const QModelIndex& index)
+{
+    if (!index.isValid()) 
+        return;
+
+    QStringList path = getPathToRoot(index);
+    if (path.isEmpty()) return;
+
+    // 1. 获取桌面根节点
+    IUIAutomationElement* pCurrentParent = nullptr;
+    IUIAutomation* pAutomation = m_helper.getAutomationObject(); // 需要在 Helper 中暴露指针 
+    pAutomation->GetRootElement(&pCurrentParent); //[cite:2]
+
+    // 2. 按照路径逐层深入查找
+    for (const QString& name : path) 
+    {
+        VARIANT var;
+        var.vt = VT_BSTR;
+        var.bstrVal = SysAllocString((BSTR)name.utf16());
+
+        IUIAutomationCondition* pCondition = nullptr;
+        pAutomation->CreatePropertyCondition(UIA_NamePropertyId, var, &pCondition);// [cite:2]
+
+            IUIAutomationElement* pNextChild = nullptr;
+        // 关键：只在当前父节点的直接子节点中找（TreeScope_Children），效率极高
+        pCurrentParent->FindFirst(TreeScope_Children, pCondition, &pNextChild);// [cite:2]
+
+        // 释放旧父节点和资源
+        pCurrentParent->Release();
+        pCondition->Release();
+        SysFreeString(var.bstrVal);
+
+        if (!pNextChild)
+        {
+            pCurrentParent = nullptr;
+            break;
+        }
+        pCurrentParent = pNextChild;
+    }
+
+    // 3. 此时 pCurrentParent 就是你实时点击的那个控件
+    if (pCurrentParent) 
+    {
+        updateAttrTreeWithRealTimeElement(pCurrentParent);
+        pCurrentParent->Release();
+    }
+
+}
+
+void MainWindow::updateAttrTreeWithRealTimeElement(IUIAutomationElement* pElement) 
+{
+    if (!pElement) return;
+
+    // 1. 获取或创建右侧树的模型
+    QStandardItemModel* model = qobject_cast<QStandardItemModel*>(myUi->attrTree->model());
     if (!model) {
         model = new QStandardItemModel(this);
-        myUi->treeView->setModel(model);
+        myUi->attrTree->setModel(model);
     }
-
-    // 2. 清空现有内容
     model->clear();
+    model->setHorizontalHeaderLabels({ "属性名", "当前实时值" });
 
-    // 3. 设置表头（clear 会把表头也删掉，所以要重新设）
-    model->setHorizontalHeaderLabels({ "Name", "Type", "Automation ID", "Rect" });
+    // 2. 准备提取实时属性
+    BSTR name = nullptr, autoId = nullptr, className = nullptr, typeName = nullptr;
+    BOOL bEnabled = FALSE;
+    RECT rect;
 
-    // 4. 使用我们之前写好的递归填充函数 addControlToModel
-    // 将这棵新抓取的子树挂载到模型的根节点上
-    addControlToModel(model->invisibleRootItem(), subTree);
+    // 调用 UIA 接口获取当前时刻的状态 
+    pElement->get_CurrentName(&name);
+    pElement->get_CurrentAutomationId(&autoId);
+    pElement->get_CurrentClassName(&className);
+    pElement->get_CurrentLocalizedControlType(&typeName);
+    pElement->get_CurrentIsEnabled(&bEnabled);
+    pElement->get_CurrentBoundingRectangle(&rect);
 
-    // 5. 自动展开前几层，方便查看
-    myUi->treeView->expandAll();
-}
+    // 3. 定义辅助 Lambda 函数用于添加行
+    auto addRow = [&](QString prop, QString val) {
+        QList<QStandardItem*> items;
+        items << new QStandardItem(prop) << new QStandardItem(val);
+        model->appendRow(items);
+    };
 
-void MainWindow::on_selectButton_clicked() {
-    // 1. 获取 TreeView 当前选中的索引
-    QModelIndex index = myUi->treeView->currentIndex();
-    if (!index.isValid()) return;
+    // 4. 将提取到的实时数据填入表格
+    addRow("Name", QString::fromWCharArray(name ? name : L""));
+    addRow("Automation ID", QString::fromWCharArray(autoId ? autoId : L""));
+    addRow("Class Name", QString::fromWCharArray(className ? className : L""));
+    addRow("Control Type", QString::fromWCharArray(typeName ? typeName : L""));
+    addRow("IsEnabled", bEnabled ? "True" : "False");
+    addRow("Location", QString("(%1, %2, %3, %4)")
+        .arg(rect.left).arg(rect.top)
+        .arg(rect.right - rect.left).arg(rect.bottom - rect.top));
 
-    // 2. 获取该节点的 Automation ID (假设它在第三列)
-    QString autoId = index.siblingAtColumn(2).data().toString();
-    QString name = index.siblingAtColumn(0).data().toString();
+    // 5. 释放 COM 字符串资源 
+    if (name) SysFreeString(name);
+    if (autoId) SysFreeString(autoId);
+    if (className) SysFreeString(className);
+    if (typeName) SysFreeString(typeName);
 
-    if (autoId.isEmpty() && name.isEmpty()) return;
-
-    // 3. 寻找该元素 (需要 Helper 提供一个 FindElement 方法)
-    // 这里简化逻辑：在当前窗口下通过 ID 找这个元素
-    IUIAutomationElement* targetElement = m_helper.findElementByIdAndName(autoId, name);
-
-    if (targetElement) {
-        // 4. 加载子树
-        ControlInfo subTree = m_helper.getTreeFromElement(targetElement);
-
-        // 5. 更新模型 (可以选择清空模型只显示这棵子树，或者挂载到当前节点下)
-        updateTreeViewWithSubTree(subTree);
-
-        targetElement->Release();
-    }
+    // 调整列宽以适应内容
+    myUi->attrTree->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 }
