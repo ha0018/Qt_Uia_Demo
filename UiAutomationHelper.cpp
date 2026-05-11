@@ -1,7 +1,8 @@
-#include "UiAutomationHelper.h"
+ï»¿#include "UiAutomationHelper.h"
 #include <windows.h>
 #include <uiautomation.h>
 #include <comdef.h>
+#include <comutil.h>
 
 UiAutomationHelper::UiAutomationHelper() : m_pAutomation(nullptr) 
 {
@@ -29,7 +30,7 @@ QVector<ControlInfo> UiAutomationHelper::getAllWindowsTree()
     m_pAutomation->GetRootElement(&pRoot);
     if (pRoot) 
     {
-        // °Ñroot×÷ÎªÒ»¸öĞéÄâ¸¸½Úµã£¬×¥È¡ËüµÄËùÓĞ×Ó½Úµã£¨¼´ËùÓĞ´°¿Ú£©
+        // æŠŠrootä½œä¸ºä¸€ä¸ªè™šæ‹Ÿçˆ¶èŠ‚ç‚¹ï¼ŒæŠ“å–å®ƒçš„æ‰€æœ‰å­èŠ‚ç‚¹ï¼ˆå³æ‰€æœ‰çª—å£ï¼‰
         ControlInfo desktopRoot;
         desktopRoot.name = "Desktop";
         getChildrenRecursive(pRoot, desktopRoot);
@@ -51,7 +52,8 @@ QVector<NameInfo> UiAutomationHelper::getAllNameTree()
     if (pRoot)
     {
         NameInfo desktopRoot;
-        desktopRoot.name = "Desktop";
+        desktopRoot.name = "æ¡Œé¢";
+        desktopRoot.localizedControlType = "çª—æ ¼";
         getChildrenName(pRoot, desktopRoot);
         result = desktopRoot.children;
         pRoot->Release();
@@ -81,7 +83,7 @@ QVector<ControlInfo> UiAutomationHelper::getControlsByWindowName(const QString& 
         BSTR name, autoId, className, helpText, typeName;
         BOOL bEnabled, bFocusable;
         RECT rect;
-        // --- »ñÈ¡³£ÓÃÊôĞÔ ---
+        // --- è·å–å¸¸ç”¨å±æ€§ ---
         pFound->get_CurrentName(&name);
         pFound->get_CurrentAutomationId(&autoId);
         pFound->get_CurrentClassName(&className); 
@@ -90,7 +92,7 @@ QVector<ControlInfo> UiAutomationHelper::getControlsByWindowName(const QString& 
         pFound->get_CurrentIsEnabled(&bEnabled); 
         pFound->get_CurrentIsKeyboardFocusable(&bFocusable); 
         pFound->get_CurrentBoundingRectangle(&rect);
-        // --- ¸³Öµ¸ø½á¹¹Ìå ---
+        // --- èµ‹å€¼ç»™ç»“æ„ä½“ ---
         windowRoot.name = QString::fromWCharArray(name ? name : L"");
         windowRoot.automationId = QString::fromWCharArray(autoId ? autoId : L"");
         windowRoot.className = QString::fromWCharArray(className ? className : L"");
@@ -99,15 +101,15 @@ QVector<ControlInfo> UiAutomationHelper::getControlsByWindowName(const QString& 
         windowRoot.enabled = QString::fromWCharArray(bEnabled ? L"True" : L"False"); 
         windowRoot.focus = QString::fromWCharArray(bFocusable ? L"True" : L"False"); 
         windowRoot.rect = QString("(%1, %2, %3, %4)").arg(rect.left).arg(rect.top).arg(rect.right - rect.left).arg(rect.bottom - rect.top);
-        // --- ÊÍ·ÅÄÚ´æ (COM ÒªÇó±ØĞëÊÖ¶¯ÊÍ·Å BSTR) ---
+        // --- é‡Šæ”¾å†…å­˜ (COM è¦æ±‚å¿…é¡»æ‰‹åŠ¨é‡Šæ”¾ BSTR) ---
         if (name) SysFreeString(name);
         if (autoId) SysFreeString(autoId);
         if (className) SysFreeString(className);
         if (helpText) SysFreeString(helpText);
         if (typeName) SysFreeString(typeName);
-        // µİ¹é»ñÈ¡¸Ã´°¿ÚÏÂµÄËùÓĞ×ÓËï½Úµã£¬´æÈë windowRoot.children ÖĞ
+        // é€’å½’è·å–è¯¥çª—å£ä¸‹çš„æ‰€æœ‰å­å­™èŠ‚ç‚¹ï¼Œå­˜å…¥ windowRoot.children ä¸­
         getChildrenRecursive(pFound, windowRoot);
-        // ½«¹¹½¨ºÃµÄÕû¿Ã¡°Ê÷¡±¼ÓÈë½á¹ûÏòÁ¿
+        // å°†æ„å»ºå¥½çš„æ•´æ£µâ€œæ ‘â€åŠ å…¥ç»“æœå‘é‡
         result.append(windowRoot);
         pFound->Release();
     }
@@ -146,7 +148,7 @@ void UiAutomationHelper::getChildrenRecursive(IUIAutomationElement* element, Con
                 BSTR name, autoId, className, helpText, typeName;
                 BOOL bEnabled, bFocusable;
                 RECT rect;
-                // --- »ñÈ¡³£ÓÃÊôĞÔ ---
+                // --- è·å–å¸¸ç”¨å±æ€§ ---
                 child->get_CurrentName(&name);
                 child->get_CurrentAutomationId(&autoId);
                 child->get_CurrentClassName(&className); 
@@ -156,7 +158,7 @@ void UiAutomationHelper::getChildrenRecursive(IUIAutomationElement* element, Con
                 child->get_CurrentIsKeyboardFocusable(&bFocusable); 
                 child->get_CurrentBoundingRectangle(&rect); 
                 ControlInfo childInfo;
-                // --- ¸³Öµ¸ø½á¹¹Ìå ---
+                // --- èµ‹å€¼ç»™ç»“æ„ä½“ ---
                 childInfo.name = QString::fromWCharArray(name ? name : L"");
                 childInfo.automationId = QString::fromWCharArray(autoId ? autoId : L"");
                 childInfo.className = QString::fromWCharArray(className ? className : L"");
@@ -165,10 +167,10 @@ void UiAutomationHelper::getChildrenRecursive(IUIAutomationElement* element, Con
                 childInfo.enabled = QString::fromWCharArray(bEnabled ? L"True" : L"False");
                 childInfo.focus = QString::fromWCharArray(bFocusable ? L"True" : L"False"); 
                 childInfo.rect = QString("(%1, %2, %3, %4)").arg(rect.left).arg(rect.top).arg(rect.right - rect.left).arg(rect.bottom - rect.top);             
-                // µİ¹éÍùÏÂÕÒµ±Ç°½ÚµãµÄ×Ó½Úµã
+                // é€’å½’å¾€ä¸‹æ‰¾å½“å‰èŠ‚ç‚¹çš„å­èŠ‚ç‚¹
                 getChildrenRecursive(child, childInfo);
                 parentInfo.children.append(childInfo);
-                // --- ÊÍ·ÅÄÚ´æ (COM ÒªÇó±ØĞëÊÖ¶¯ÊÍ·Å BSTR) ---
+                // --- é‡Šæ”¾å†…å­˜ (COM è¦æ±‚å¿…é¡»æ‰‹åŠ¨é‡Šæ”¾ BSTR) ---
                 if (name)
                 {
                     SysFreeString(name);
@@ -216,15 +218,21 @@ void UiAutomationHelper::getChildrenName(IUIAutomationElement* element, NameInfo
             children->GetElement(i, &child);
             if (child)
             {
-                BSTR name;
+                BSTR name, localizedControlType;
                 child->get_CurrentName(&name);
+                child->get_CurrentLocalizedControlType(&localizedControlType);
                 NameInfo childInfo;
                 childInfo.name = QString::fromWCharArray(name ? name : L"");
+                childInfo.localizedControlType = QString::fromWCharArray(localizedControlType ? localizedControlType : L"");
                 getChildrenName(child, childInfo);
                 parentInfo.children.append(childInfo);
                 if (name)
                 {
                     SysFreeString(name);
+                }
+                if (localizedControlType)
+                {
+                    SysFreeString(localizedControlType);
                 }
                 child->Release();
             }
@@ -240,7 +248,7 @@ ControlInfo UiAutomationHelper::getTreeFromElement(IUIAutomationElement* element
     {
         return rootInfo;
     }
-    // »ñÈ¡µ±Ç°´«ÈëÔªËØµÄ»ù±¾ĞÅÏ¢
+    // è·å–å½“å‰ä¼ å…¥å…ƒç´ çš„åŸºæœ¬ä¿¡æ¯
     BSTR name, autoId, typeName;
     element->get_CurrentName(&name);
     element->get_CurrentAutomationId(&autoId);
@@ -254,7 +262,7 @@ ControlInfo UiAutomationHelper::getTreeFromElement(IUIAutomationElement* element
     if (autoId) SysFreeString(autoId);
     if (typeName) SysFreeString(typeName);
 
-    // ¿ªÆôµİ¹é×¥È¡×Ó½Úµã
+    // å¼€å¯é€’å½’æŠ“å–å­èŠ‚ç‚¹
     getChildrenRecursive(element, rootInfo);
 
     return rootInfo;
@@ -267,7 +275,7 @@ IUIAutomationElement* UiAutomationHelper::findElementByIdAndName(const QString& 
     IUIAutomationElement* pRoot = nullptr;
     m_pAutomation->GetRootElement(&pRoot);
 
-    // ´´½¨¸´ºÏËÑË÷Ìõ¼ş£ºID »ò Name
+    // åˆ›å»ºå¤åˆæœç´¢æ¡ä»¶ï¼šID æˆ– Name
     IUIAutomationCondition* pIdCond = nullptr, * pNameCond = nullptr, * pOrCond = nullptr;
 
     VARIANT vId, vName;
@@ -279,10 +287,10 @@ IUIAutomationElement* UiAutomationHelper::findElementByIdAndName(const QString& 
     m_pAutomation->CreateOrCondition(pIdCond, pNameCond, &pOrCond);
 
     IUIAutomationElement* pFound = nullptr;
-    // ÔÚÈ«ÏµÍ³·¶Î§ÄÚÕÒ£¨TreeScope_Descendants£©£¬»òÕßÔÚÄã¼ÇÂ¼µÄ´°¿Ú¾ä±úÏÂÕÒ
+    // åœ¨å…¨ç³»ç»ŸèŒƒå›´å†…æ‰¾ï¼ˆTreeScope_Descendantsï¼‰ï¼Œæˆ–è€…åœ¨ä½ è®°å½•çš„çª—å£å¥æŸ„ä¸‹æ‰¾
     pRoot->FindFirst(TreeScope_Descendants, pOrCond, &pFound);
 
-    // ÊÍ·Å×ÊÔ´
+    // é‡Šæ”¾èµ„æº
     SysFreeString(vId.bstrVal); SysFreeString(vName.bstrVal);
     if (pIdCond) pIdCond->Release();
     if (pNameCond) pNameCond->Release();

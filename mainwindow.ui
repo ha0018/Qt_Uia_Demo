@@ -18,12 +18,9 @@
     <item>
      <layout class="QHBoxLayout" name="toolLayout">
       <item>
-       <widget class="QLineEdit" name="lineEdit"/>
-      </item>
-      <item>
-       <widget class="QPushButton" name="searchButton">
+       <widget class="QPushButton" name="refreshButton">
         <property name="text">
-         <string>搜索</string>
+         <string>刷新</string>
         </property>
        </widget>
       </item>
@@ -31,6 +28,16 @@
        <widget class="QPushButton" name="selectButton">
         <property name="text">
          <string>指明</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lineEdit"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="searchButton">
+        <property name="text">
+         <string>搜索</string>
         </property>
        </widget>
       </item>

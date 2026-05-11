@@ -36,7 +36,7 @@
     <Import Project="$(QtMsBuild)\qt_defaults.props" />
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
-    <QtInstall>Qt6.7.3</QtInstall>
+    <QtInstall>qt6.7</QtInstall>
     <QtModules>core;gui;widgets</QtModules>
     <QtBuildConfig>debug</QtBuildConfig>
     <QtHeaderSearchPath>C:\Users\h\source\repos\QtUiAutomation\x64\Debug\qt\uic</QtHeaderSearchPath>
@@ -109,6 +109,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ControlInfo.h" />
+    <QtMoc Include="OverlayWidget.h" />
     <ClInclude Include="UiAutomationHelper.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

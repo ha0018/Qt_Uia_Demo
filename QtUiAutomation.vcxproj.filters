@@ -52,4 +52,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="OverlayWidget.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+  </ItemGroup>
 </Project>

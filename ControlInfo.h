@@ -15,6 +15,7 @@ struct ControlInfo {
 };
 
 struct NameInfo {
-    QString name;               // 窗口名
+    QString name;                 
+    QString localizedControlType;   
     QVector<NameInfo> children; // 新增：存储子节点
 };
